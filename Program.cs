@@ -127,7 +127,7 @@ namespace TentaClient
 							Thread.Sleep(1000);
 							Console.WriteLine("Trying to delete 'UserToDeleteAsOther' account as VD (Should not be able to so will return forbidden)");
 							Thread.Sleep(1000);
-							var deleteUserAsEmployeeResponse = await DeleteUser(authResult.JwtToken, authResult.RefreshToken, "UserToDeleteAsOther", authResult.Expires);
+							var deleteUserAsEmployeeResponse = await DeleteUser(authResult.JwtToken, "UserToDeleteAsOther", authResult.RefreshToken, authResult.Expires);
 							Console.WriteLine(deleteUserAsEmployeeResponse);
 							break;
 						}
@@ -164,7 +164,7 @@ namespace TentaClient
 							Thread.Sleep(1000);
 							Console.WriteLine("Trying to delete 'UserToDeleteAsOther' account as CM (Should not be able to so will return forbidden)");
 							Thread.Sleep(1000);
-							var deleteUserAsEmployeeResponse = await DeleteUser(authResult.JwtToken, authResult.RefreshToken, "UserToDeleteAsOther", authResult.Expires);
+							var deleteUserAsEmployeeResponse = await DeleteUser(authResult.JwtToken, "UserToDeleteAsOther", authResult.RefreshToken, authResult.Expires);
 							Console.WriteLine(deleteUserAsEmployeeResponse);
 
 							break;
@@ -232,7 +232,7 @@ namespace TentaClient
 							Thread.Sleep(1000); 
 							Console.WriteLine("Trying to delete first account with Employee (Should not be able to so will return forbidden)");
 							Thread.Sleep(1000);
-							var deleteUserAsEmployeeResponse = await DeleteUser(authResult.JwtToken, authResult.RefreshToken, "FirstUserIsAdmin1991", authResult.Expires);
+							var deleteUserAsEmployeeResponse = await DeleteUser(authResult.JwtToken, "UserToDeleteAsOther", authResult.RefreshToken, authResult.Expires);
 							Console.WriteLine(deleteUserAsEmployeeResponse);
 							break;
 						}
@@ -266,10 +266,8 @@ namespace TentaClient
 		}
 		public static async Task<string> PostUser(string userName, int employeeID, string email, string password, string token, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
 
 			var user = new RegisterUser() { UserName = userName, EmployeeId = employeeID, Email = email, Password = password };			
 			string endpoint = "user/register-employee";
@@ -277,7 +275,7 @@ namespace TentaClient
 			var data = new StringContent(json, Encoding.UTF8, "application/json");
 			using var client = new HttpClient();
 
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 			var response = await client.PostAsync(urlHttps + endpoint, data);
 			if (response.StatusCode != HttpStatusCode.OK)
 			{
@@ -289,10 +287,8 @@ namespace TentaClient
 		}
 		public static async Task<string> PostAdmin(string token, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);			
+
 			var user = new RegisterUser();
 			user.UserName = "Admin1991";
 			user.EmployeeId = 3;
@@ -302,7 +298,7 @@ namespace TentaClient
 			var json = JsonConvert.SerializeObject(user);
 			var data = new StringContent(json, Encoding.UTF8, "application/json");
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 			var response = await client.PostAsync(urlHttps + endpoint, data);
 			if (response.StatusCode != HttpStatusCode.OK)
 			{
@@ -313,10 +309,7 @@ namespace TentaClient
 		}
 		public static async Task<string> PostVD(string token, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
 			var user = new RegisterUser();
 			user.UserName = "VD1991";
 			user.EmployeeId = 4;
@@ -328,7 +321,7 @@ namespace TentaClient
 			var data = new StringContent(json, Encoding.UTF8, "application/json");
 
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 
 			var response = await client.PostAsync(urlHttps + endpoint, data);
 			if (response.StatusCode != HttpStatusCode.OK)
@@ -340,10 +333,10 @@ namespace TentaClient
 		}
 		public static async Task<string> PostCM(string token, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
+
+			//var account = _context.Accounts.FirstOrDefault(u => u.JwtToken == validToken);
+			//refreshToken = account.RefreshToken;
 			var user = new RegisterUser();
 			user.UserName = "CM1991";
 			user.EmployeeId = 5;
@@ -355,7 +348,7 @@ namespace TentaClient
 			var data = new StringContent(json, Encoding.UTF8, "application/json");
 
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 
 			var response = await client.PostAsync(urlHttps + endpoint, data);
 			if (response.StatusCode != HttpStatusCode.OK)
@@ -396,13 +389,10 @@ namespace TentaClient
 		#region CRUD Users
 		public static async Task<IEnumerable<AccountResponse>> GetAllUsers(string token, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
 			string endpoint = "user/get-all-users";
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);			
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);			
 			var response = await client.GetAsync(urlHttps + endpoint);
 			if (response.StatusCode != HttpStatusCode.OK)
 			{
@@ -415,10 +405,8 @@ namespace TentaClient
 
 		public static async Task<string> DeleteUser(string token, string userName, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
+
 			UriBuilder uribuilder = new UriBuilder();
 			uribuilder.Scheme = "https";
 			uribuilder.Port = 5001;
@@ -427,7 +415,7 @@ namespace TentaClient
 			Uri uri = uribuilder.Uri;
 
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 			var response = await client.DeleteAsync(uri);
 			if (response.StatusCode != HttpStatusCode.OK)
 			{
@@ -437,10 +425,7 @@ namespace TentaClient
 		}
 		public static async Task<string> UpdateUser(string token, UpdateRequest user, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
 			UriBuilder uribuilder = new UriBuilder();
 			uribuilder.Scheme = "https";
 			uribuilder.Port = 5001;
@@ -451,7 +436,7 @@ namespace TentaClient
 			var data = new StringContent(json, Encoding.UTF8, "application/json");
 
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 			var response = await client.PatchAsync(uri, data);
 			return response.StatusCode.ToString();
 		}
@@ -461,13 +446,10 @@ namespace TentaClient
 		#region CRUD Orders
 		public static async Task<IEnumerable<OrderResponse>> GetAllOrders(string token, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
 			string endpoint = "order/get-all-orders";
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);
 			
 			var response = await client.GetAsync(urlHttps + endpoint);
 			if (response.StatusCode != HttpStatusCode.OK)
@@ -481,10 +463,7 @@ namespace TentaClient
 
 		public static async Task<IEnumerable<OrderResponse>> GetMyOrders(string token, string refreshToken, DateTime expiryRefreshToken, int employeeId = 0)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
 			UriBuilder uribuilder = new UriBuilder();
 			uribuilder.Scheme = "https";
 			uribuilder.Port = 5001;
@@ -492,7 +471,7 @@ namespace TentaClient
 			uribuilder.Query = "employeeId=" + employeeId;
 			Uri uri = uribuilder.Uri;
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);			
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);			
 						
 			var response = await client.GetAsync(uri);
 			if (response.StatusCode != HttpStatusCode.OK)
@@ -505,10 +484,8 @@ namespace TentaClient
 		}
 		public static async Task<IEnumerable<OrderResponse>> GetCountryOrders(string token, string refreshToken, DateTime expiryRefreshToken, string country = null)
 		{
-			if (!TokenValidation(token, refreshToken, expiryRefreshToken).Result)
-			{
-				return null;
-			}
+			var validToken = await TokenValidation(token, refreshToken, expiryRefreshToken);
+
 			UriBuilder uribuilder = new UriBuilder();
 			uribuilder.Scheme = "https";
 			uribuilder.Port = 5001;
@@ -517,8 +494,8 @@ namespace TentaClient
 			Uri uri = uribuilder.Uri;
 
 			using var client = new HttpClient();
-			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);			
-		
+			client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", validToken);			
+			
 			var response = await client.GetAsync(uri);
 			if (response.StatusCode != HttpStatusCode.OK)
 			{
@@ -530,26 +507,37 @@ namespace TentaClient
 		}
 		#endregion
 
-		public static async Task<bool> TokenValidation(string jwtToken, string refreshToken, DateTime expiryRefreshToken)
+		public static async Task<string> TokenValidation(string jwtToken, string refreshToken, DateTime expiryRefreshToken)
 		{
-			if (expiryRefreshToken < DateTime.UtcNow)
+			var account = _context.Accounts.FirstOrDefault(u => u.RefreshToken == refreshToken);
+			if (account != null)
 			{
-				var account = _context.Accounts.FirstOrDefault(u => u.RefreshToken == refreshToken);
-				var newRefreshToken = await RefreshTokenAsync(jwtToken, refreshToken);
-				account.RefreshToken = newRefreshToken.ToString();
-				await _context.SaveChangesAsync();
-				return true;
+				if (expiryRefreshToken < DateTime.UtcNow)
+				{
+					var newRefreshToken = await RefreshTokenAsync(jwtToken, refreshToken);
+					account.RefreshToken = newRefreshToken.RefreshToken;
+					account.JwtToken = newRefreshToken.JwtToken;
+					await _context.SaveChangesAsync();
+					return account.JwtToken;
+				}
+				else
+				{
+					var handler = new JwtSecurityTokenHandler();
+					var token = handler.ReadJwtToken(jwtToken);
+					if (token.ValidTo <= DateTime.UtcNow)
+					{
+						var newTokenToReturn = await RefreshTokenAsync(jwtToken, refreshToken);
+						account.RefreshToken = newTokenToReturn.RefreshToken;
+						account.JwtToken = newTokenToReturn.JwtToken;
+						await _context.SaveChangesAsync();
+						return newTokenToReturn.JwtToken;
+					}
+					return jwtToken;
+				}
 			}
 			else
-			{
-				var handler = new JwtSecurityTokenHandler();
-				var token = handler.ReadJwtToken(jwtToken);
-				if (token.ValidTo <= DateTime.UtcNow)
-				{
-					return false;
-				}
-				return true;
-			}			
+				throw new System.ArgumentNullException("User does not exist with this refreshtoken, please login again.");
+			
 		}
 		public static async Task<AuthenticateResponse> RefreshTokenAsync(string token, string refreshToken)
 		{			
